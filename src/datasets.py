@@ -2,6 +2,8 @@ from pathlib import Path
 from statistics import NormalDist
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.datasets import fetch_openml
+from sklearn.preprocessing import StandardScaler
 
 W_STAR = np.array([np.cos(np.pi / 6), np.sin(np.pi / 6)]) 
 
@@ -59,3 +61,18 @@ def load_dataset(name, run, data_dir):
     train, test = data["train_idx"][run], data["test_idx"][run]
     eta_test = data["eta"][test] if "eta" in data else None
     return add_bias(data["X"][train]), data["y"][train], add_bias(data["X"][test]), data["y"][test], eta_test
+
+def load_spambase(data_home=None):
+    X,y = fetch_openml("spambase", version=1, as_frame=False, return_X_y=True, parser="auto", data_home=data_home)
+    y = np.where(y.astype(int) == 1,1,-1)
+    _, idx = np.unique(np.column_stack([X,y]), axis=0,return_index=True)
+    idx = np.sort(idx)
+
+    return X[idx], y[idx]
+
+def standardize(X_train, X_other):
+    scaler = StandardScaler().fit(X_train[:,:-1])
+    scale = lambda X: np.column_stack([scaler.transform(X[:,:-1]), X[:,-1]])
+
+    return scale(X_train), scale(X_other)
+
